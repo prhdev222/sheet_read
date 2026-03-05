@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Doctor Lookup — ค้นหาข้อมูลแพทย์</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-deep: #060b16;
+      --bg-surface: rgba(255,255,255,0.025);
+      --bg-hover: rgba(96,165,250,0.06);
+      --border: rgba(255,255,255,0.06);
+      --border-focus: #60a5fa;
+      --text-primary: #f1f5f9;
+      --text-secondary: #94a3b8;
+      --text-muted: rgba(255,255,255,0.3);
+      --accent-blue: #3b82f6;
+      --accent-gold: #fbbf24;
+      --accent-green: #4ade80;
+      --accent-red: #ef4444;
+      --radius: 12px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      background: var(--bg-deep);
+      background-image:
+        radial-gradient(ellipse 80% 60% at 20% 10%, rgba(30,64,120,0.2), transparent),
+        radial-gradient(ellipse 60% 50% at 80% 90%, rgba(15,40,80,0.15), transparent);
+      font-family: 'Sarabun', sans-serif;
+      color: var(--text-primary);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Header ── */
+    .header {
+      padding: 28px 24px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    .header-inner {
+      max-width: 700px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .header-icon {
+      width: 44px; height: 44px;
+      background: linear-gradient(135deg, rgba(96,165,250,0.15), rgba(59,130,246,0.08));
+      border: 1px solid rgba(96,165,250,0.2);
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px;
+      flex-shrink: 0;
+    }
+    .header h1 {
+      font-size: 21px; font-weight: 700; letter-spacing: -0.3px;
+      line-height: 1.2;
+    }
+    .header p {
+      font-size: 12.5px; color: var(--text-muted); margin-top: 2px;
+    }
+
+    /* ── Container ── */
+    .container {
+      max-width: 700px;
+      margin: 0 auto;
+      padding: 20px 20px 60px;
+    }
+
+    /* ── Glass Panel ── */
+    .glass {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      backdrop-filter: blur(16px);
+      padding: 24px;
+      animation: fadeUp 0.35s ease;
+    }
+
+    /* ── Form Elements ── */
+    label {
+      display: block;
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+      font-weight: 500;
+      letter-spacing: 0.3px;
+    }
+    .input-field {
+      width: 100%;
+      padding: 12px 16px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 10px;
+      color: var(--text-primary);
+      font-size: 15px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .input-field:focus {
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 3px rgba(96,165,250,0.12);
+    }
+    .input-field::placeholder { color: var(--text-muted); }
+    .input-mono {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+    }
+
+    .form-row { margin-bottom: 14px; }
+
+    /* ── Buttons ── */
+    .btn-primary {
+      padding: 12px 32px;
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 24px rgba(59,130,246,0.3);
+    }
+    .btn-primary:active { transform: translateY(0); }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    .btn-ghost {
+      background: none; border: none;
+      color: var(--text-muted); font-size: 12px;
+      cursor: pointer; font-family: inherit;
+      transition: color 0.15s;
+    }
+    .btn-ghost:hover { color: var(--text-secondary); }
+
+    /* ── Hint Box ── */
+    .hint-box {
+      margin-top: 18px;
+      padding: 14px 16px;
+      background: rgba(250,204,21,0.04);
+      border: 1px solid rgba(250,204,21,0.1);
+      border-radius: 10px;
+      font-size: 12.5px;
+      color: rgba(255,255,255,0.45);
+      line-height: 1.8;
+    }
+    .hint-box strong { color: rgba(255,255,255,0.6); }
+    .hint-box code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--accent-gold);
+      background: rgba(255,255,255,0.05);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    /* ── Error ── */
+    .error-box {
+      margin-top: 14px;
+      padding: 10px 14px;
+      background: rgba(239,68,68,0.08);
+      border: 1px solid rgba(239,68,68,0.18);
+      border-radius: 10px;
+      font-size: 13px;
+      color: #fca5a5;
+    }
+
+    /* ── Status Bar ── */
+    .status-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 16px;
+      background: rgba(74,222,128,0.04);
+      border: 1px solid rgba(74,222,128,0.1);
+      border-radius: 10px;
+      margin-bottom: 16px;
+      animation: fadeUp 0.3s ease;
+    }
+    .status-left { display: flex; align-items: center; gap: 10px; }
+    .pulse-dot {
+      width: 8px; height: 8px;
+      background: var(--accent-green);
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+    .status-text { font-size: 13px; color: #86efac; font-weight: 500; }
+    .badge {
+      display: inline-block;
+      padding: 2px 10px;
+      background: rgba(255,255,255,0.06);
+      border-radius: 6px;
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    /* ── Search Bar ── */
+    .search-wrap {
+      position: relative;
+      margin-bottom: 18px;
+      animation: fadeUp 0.35s ease 0.05s both;
+    }
+    .search-icon {
+      position: absolute;
+      left: 18px; top: 50%;
+      transform: translateY(-50%);
+      opacity: 0.28;
+      pointer-events: none;
+    }
+    .search-input {
+      width: 100%;
+      padding: 16px 44px 16px 52px;
+      background: rgba(255,255,255,0.05);
+      border: 1.5px solid rgba(255,255,255,0.08);
+      border-radius: 14px;
+      color: var(--text-primary);
+      font-size: 17px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.25s, box-shadow 0.25s, background 0.25s;
+    }
+    .search-input:focus {
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 4px rgba(96,165,250,0.1);
+      background: rgba(255,255,255,0.07);
+    }
+    .search-input::placeholder { color: var(--text-muted); }
+    .search-clear {
+      position: absolute;
+      right: 14px; top: 50%;
+      transform: translateY(-50%);
+      width: 26px; height: 26px;
+      background: rgba(255,255,255,0.08);
+      border: none; border-radius: 50%;
+      color: var(--text-secondary);
+      font-size: 13px;
+      cursor: pointer;
+      display: none;
+      align-items: center; justify-content: center;
+    }
+    .search-clear.visible { display: flex; }
+
+    .result-count {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+    }
+
+    /* ── Result Cards ── */
+    .results-list { display: flex; flex-direction: column; gap: 6px; }
+
+    .result-card {
+      padding: 14px 18px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .result-card:hover {
+      background: var(--bg-hover);
+      border-color: rgba(96,165,250,0.15);
+    }
+    .result-card.active {
+      background: rgba(96,165,250,0.07);
+      border-color: rgba(96,165,250,0.25);
+    }
+    .result-name {
+      font-size: 15px; font-weight: 600;
+      color: var(--text-primary);
+    }
+    .result-sub {
+      font-size: 12px; color: var(--text-muted);
+      margin-top: 2px;
+    }
+    .chevron {
+      opacity: 0.2;
+      transition: transform 0.2s;
+      flex-shrink: 0;
+    }
+    .result-card.active .chevron { transform: rotate(180deg); }
+
+    /* ── Detail Panel ── */
+    .detail-panel {
+      margin: 4px 0 8px;
+      padding: 6px 0;
+      background: rgba(255,255,255,0.012);
+      border: 1px solid rgba(255,255,255,0.04);
+      border-radius: var(--radius);
+      animation: fadeUp 0.25s ease;
+      overflow: hidden;
+    }
+    .detail-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 11px 18px;
+      transition: background 0.12s;
+    }
+    .detail-row:hover { background: rgba(255,255,255,0.03); }
+    .detail-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 2px;
+      letter-spacing: 0.2px;
+    }
+    .detail-value {
+      font-size: 14px;
+      color: var(--text-primary);
+      word-break: break-all;
+    }
+    .detail-value.highlight-gold {
+      color: var(--accent-gold);
+      font-weight: 600;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .detail-value.highlight-blue {
+      color: #93c5fd;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .copy-btn {
+      padding: 5px 14px;
+      background: rgba(96,165,250,0.1);
+      border: 1px solid rgba(96,165,250,0.18);
+      border-radius: 8px;
+      color: #93c5fd;
+      font-size: 12px;
+      font-family: inherit;
+      cursor: pointer;
+      transition: background 0.12s;
+      white-space: nowrap;
+      flex-shrink: 0;
+      margin-left: 12px;
+    }
+    .copy-btn:hover { background: rgba(96,165,250,0.18); }
+    .copy-btn.copied {
+      background: rgba(74,222,128,0.12);
+      border-color: rgba(74,222,128,0.25);
+      color: #86efac;
+    }
+
+    /* ── Empty State ── */
+    .empty-state {
+      text-align: center;
+      padding: 48px 20px;
+      color: var(--text-muted);
+    }
+    .empty-state .icon { font-size: 40px; margin-bottom: 12px; }
+
+    .truncate-note {
+      text-align: center;
+      font-size: 12px;
+      color: var(--text-muted);
+      padding: 14px;
+    }
+
+    /* ── Animations ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(74,222,128,0.35); }
+      50% { box-shadow: 0 0 0 6px rgba(74,222,128,0); }
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 480px) {
+      .header { padding: 20px 16px 16px; }
+      .container { padding: 16px 14px 40px; }
+      .glass { padding: 18px; }
+      .search-input { font-size: 16px; padding: 14px 40px 14px 46px; }
+      .result-card { padding: 12px 14px; }
+      .detail-row { padding: 10px 14px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-inner">
+      <div class="header-icon">🔍</div>
+      <div>
+        <h1>Doctor Lookup</h1>
+        <p>ค้นหาข้อมูลจาก Google Sheet • Read-only</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+    <!-- Connection Panel -->
+    <div id="connectPanel" class="glass">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:18px;">
+        <span style="font-size:14px">📄</span>
+        <span style="font-size:14px;font-weight:600;color:var(--text-secondary)">เชื่อมต่อ Google Sheet</span>
+      </div>
+
+      <div class="form-row">
+        <label>Sheet ID หรือ URL</label>
+        <input id="sheetIdInput" class="input-field input-mono" placeholder="1BxiMVs0XRA5nFMdKvBd... หรือวาง URL เต็ม">
+      </div>
+      <div class="form-row">
+        <label>ชื่อ Sheet (tab)</label>
+        <input id="sheetNameInput" class="input-field" placeholder="Sheet1" value="Sheet1">
+      </div>
+
+      <button id="connectBtn" class="btn-primary" onclick="connectSheet()">
+        เชื่อมต่อ
+      </button>
+
+      <div id="errorBox" class="error-box" style="display:none"></div>
+
+      <div class="hint-box">
+        💡 <strong>วิธีหา Sheet ID:</strong> จาก URL ของ Google Sheet<br>
+        <code>docs.google.com/spreadsheets/d/<strong>ตรงนี้คือ ID</strong>/edit</code><br>
+        Sheet ต้อง Share เป็น "Anyone with the link can view"
+      </div>
+    </div>
+
+    <!-- Search & Results (hidden initially) -->
+    <div id="searchPanel" style="display:none">
+      <!-- Status -->
+      <div class="status-bar">
+        <div class="status-left">
+          <span class="pulse-dot"></span>
+          <span class="status-text">เชื่อมต่อแล้ว</span>
+          <span id="countBadge" class="badge"></span>
+        </div>
+        <button class="btn-ghost" onclick="disconnect()">เปลี่ยน Sheet</button>
+      </div>
+
+      <!-- Search -->
+      <div class="search-wrap">
+        <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+        </svg>
+        <input id="searchInput" class="search-input" placeholder="ค้นหาชื่อแพทย์ หรือข้อมูลอื่นๆ..." oninput="doSearch()">
+        <button id="clearBtn" class="search-clear" onclick="clearSearch()">✕</button>
+      </div>
+
+      <div id="resultCount" class="result-count" style="display:none"></div>
+      <div id="resultsList" class="results-list"></div>
+    </div>
+  </div>
+
+<script>
+  // ── State ──
+  let headers = [];
+  let data = [];
+  let selectedIdx = null;
+
+  // ── Column guessing ──
+  function guessCol(keywords) {
+    for (const kw of keywords) {
+      const idx = headers.findIndex(h => h.toLowerCase().includes(kw));
+      if (idx >= 0) return idx;
+    }
+    return -1;
+  }
+
+  // ── Connect ──
+  async function connectSheet() {
+    const btn = document.getElementById('connectBtn');
+    const errBox = document.getElementById('errorBox');
+    errBox.style.display = 'none';
+
+    let rawId = document.getElementById('sheetIdInput').value.trim();
+    const sheetName = document.getElementById('sheetNameInput').value.trim() || 'Sheet1';
+
+    // Extract ID from URL
+    const match = rawId.match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
+    if (match) rawId = match[1];
+
+    if (!rawId) {
+      errBox.textContent = '⚠️ กรุณาใส่ Sheet ID';
+      errBox.style.display = 'block';
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = '⏳ กำลังโหลด...';
+
+    try {
+      const url = `https://docs.google.com/spreadsheets/d/${rawId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheetName)}`;
+      const res = await fetch(url);
+      const text = await res.text();
+
+      const jsonMatch = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\);?$/);
+      if (!jsonMatch) throw new Error('ไม่สามารถอ่าน Sheet ได้ — ตรวจสอบว่า Share เป็น "Anyone with the link"');
+
+      const json = JSON.parse(jsonMatch[1]);
+      headers = json.table.cols.map(c => c.label || `Col ${c.id}`);
+      data = json.table.rows
+        .map(r => r.c.map(cell => (cell ? cell.v || cell.f || '' : '')))
+        .filter(r => r.some(cell => cell !== ''));
+
+      document.getElementById('connectPanel').style.display = 'none';
+      document.getElementById('searchPanel').style.display = 'block';
+      document.getElementById('countBadge').textContent = data.length + ' รายการ';
+      document.getElementById('searchInput').focus();
+
+      renderResults(data);
+    } catch (e) {
+      errBox.textContent = '⚠️ ' + (e.message || 'เกิดข้อผิดพลาด');
+      errBox.style.display = 'block';
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'เชื่อมต่อ';
+    }
+  }
+
+  // ── Disconnect ──
+  function disconnect() {
+    headers = [];
+    data = [];
+    selectedIdx = null;
+    document.getElementById('connectPanel').style.display = 'block';
+    document.getElementById('searchPanel').style.display = 'none';
+    document.getElementById('searchInput').value = '';
+    document.getElementById('resultCount').style.display = 'none';
+  }
+
+  // ── Search ──
+  function doSearch() {
+    const term = document.getElementById('searchInput').value.toLowerCase().trim();
+    const clearBtn = document.getElementById('clearBtn');
+    const countEl = document.getElementById('resultCount');
+
+    clearBtn.classList.toggle('visible', term.length > 0);
+    selectedIdx = null;
+
+    const filtered = term
+      ? data.filter(row => row.some(cell => String(cell).toLowerCase().includes(term)))
+      : data;
+
+    if (term) {
+      countEl.textContent = `พบ ${filtered.length} จาก ${data.length} รายการ`;
+      countEl.style.display = 'block';
+    } else {
+      countEl.style.display = 'none';
+    }
+
+    renderResults(filtered);
+  }
+
+  function clearSearch() {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('searchInput').focus();
+    doSearch();
+  }
+
+  // ── Render ──
+  function renderResults(rows) {
+    const list = document.getElementById('resultsList');
+    const nameCol = Math.max(guessCol(['ชื่อ', 'name']), 0);
+    const show = rows.slice(0, 60);
+
+    let html = '';
+    show.forEach((row, i) => {
+      const displayName = row[nameCol] || row[0] || '—';
+      const subText = (headers[1] && row[1] && nameCol !== 1) ? row[1] : '';
+
+      html += `
+        <div>
+          <div class="result-card" data-idx="${i}" onclick="toggleDetail(this, ${i})">
+            <div>
+              <div class="result-name">${esc(displayName)}</div>
+              ${subText ? `<div class="result-sub">${esc(String(subText))}</div>` : ''}
+            </div>
+            <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M6 9l6 6 6-6"/>
+            </svg>
+          </div>
+          <div class="detail-slot" id="detail-${i}"></div>
+        </div>`;
+    });
+
+    if (rows.length === 0 && document.getElementById('searchInput').value.trim()) {
+      html = `
+        <div class="empty-state">
+          <div class="icon">🔍</div>
+          <div>ไม่พบผลลัพธ์สำหรับ "${esc(document.getElementById('searchInput').value)}"</div>
+        </div>`;
+    }
+
+    if (rows.length > 60) {
+      html += `<div class="truncate-note">แสดง 60 จาก ${rows.length} รายการ — ค้นหาให้เฉพาะเจาะจงขึ้น</div>`;
+    }
+
+    list.innerHTML = html;
+  }
+
+  // ── Toggle Detail ──
+  function toggleDetail(cardEl, idx) {
+    const slot = document.getElementById('detail-' + idx);
+    const term = document.getElementById('searchInput').value.toLowerCase().trim();
+    const filtered = term
+      ? data.filter(row => row.some(cell => String(cell).toLowerCase().includes(term)))
+      : data;
+    const row = filtered[idx];
+
+    // Close previous
+    if (selectedIdx !== null && selectedIdx !== idx) {
+      const prevCard = document.querySelector(`.result-card[data-idx="${selectedIdx}"]`);
+      const prevSlot = document.getElementById('detail-' + selectedIdx);
+      if (prevCard) prevCard.classList.remove('active');
+      if (prevSlot) prevSlot.innerHTML = '';
+    }
+
+    if (selectedIdx === idx) {
+      cardEl.classList.remove('active');
+      slot.innerHTML = '';
+      selectedIdx = null;
+      return;
+    }
+
+    selectedIdx = idx;
+    cardEl.classList.add('active');
+
+    const accountCol = guessCol(['บัญชี', 'account']);
+    const phoneCol = guessCol(['โทร', 'phone', 'เบอร์']);
+
+    let detailHtml = '<div class="detail-panel">';
+    headers.forEach((header, j) => {
+      const val = row[j];
+      if (val === '' && val !== 0) return;
+
+      const isAccount = j === accountCol;
+      const isPhone = j === phoneCol;
+      const valClass = isAccount ? 'highlight-gold' : isPhone ? 'highlight-blue' : '';
+      const prefix = isAccount ? '🏦 ' : isPhone ? '📱 ' : '';
+
+      detailHtml += `
+        <div class="detail-row">
+          <div style="flex:1;min-width:0">
+            <div class="detail-label">${esc(header)}</div>
+            <div class="detail-value ${valClass}">${prefix}${esc(String(val))}</div>
+          </div>
+          <button class="copy-btn" onclick="event.stopPropagation();copyVal(this,'${esc(String(val).replace(/'/g, "\\'"))}')" >
+            คัดลอก
+          </button>
+        </div>`;
+    });
+    detailHtml += '</div>';
+
+    slot.innerHTML = detailHtml;
+  }
+
+  // ── Copy ──
+  function copyVal(btn, text) {
+    navigator.clipboard.writeText(text).then(() => {
+      btn.classList.add('copied');
+      btn.textContent = '✓ คัดลอกแล้ว';
+      setTimeout(() => {
+        btn.classList.remove('copied');
+        btn.textContent = 'คัดลอก';
+      }, 1500);
+    });
+  }
+
+  // ── Escape HTML ──
+  function esc(str) {
+    const d = document.createElement('div');
+    d.textContent = str;
+    return d.innerHTML;
+  }
+
+  // ── Enter key to connect ──
+  document.getElementById('sheetIdInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') connectSheet();
+  });
+</script>
+
+</body>
+</html>
