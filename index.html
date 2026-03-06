@@ -442,7 +442,10 @@
           <span class="status-text">เชื่อมต่อแล้ว</span>
           <span id="countBadge" class="badge"></span>
         </div>
-        <button class="btn-ghost" onclick="disconnect()">เปลี่ยน Sheet</button>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <button class="btn-ghost" onclick="refreshSheet()" id="refreshBtn" title="ดึงข้อมูลล่าสุดจาก Sheet (รวมแถว/คอลัมน์ที่เพิ่มใหม่)">โหลดใหม่</button>
+          <button class="btn-ghost" onclick="disconnect()">เปลี่ยน Sheet</button>
+        </div>
       </div>
 
       <!-- Search -->
@@ -506,8 +509,14 @@
 
       const json = JSON.parse(jsonMatch[1]);
       headers = json.table.cols.map(c => c.label || `Col ${c.id}`);
+      const numCols = headers.length;
       data = json.table.rows
-        .map(r => r.c.map(cell => (cell ? cell.v || cell.f || '' : '')))
+        .map(r => {
+          const cells = (r.c || []).map(cell => (cell ? cell.v ?? cell.f ?? '' : ''));
+          // ปรับความยาวให้เท่าจำนวนคอลัมน์ เพื่อให้ค้นหาได้ทุกคอลัมน์
+          while (cells.length < numCols) cells.push('');
+          return cells.slice(0, numCols);
+        })
         .filter(r => r.some(cell => cell !== ''));
 
       document.getElementById('connectPanel').style.display = 'none';
@@ -522,6 +531,48 @@
     } finally {
       btn.disabled = false;
       btn.textContent = 'เชื่อมต่อ';
+    }
+  }
+
+  // ── Refresh (โหลดข้อมูลล่าสุดจาก Sheet รวมแถว/คอลัมน์ที่เพิ่มใหม่) ──
+  async function refreshSheet() {
+    let rawId = document.getElementById('sheetIdInput').value.trim();
+    const sheetName = document.getElementById('sheetNameInput').value.trim() || 'Sheet1';
+    const match = rawId.match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
+    if (match) rawId = match[1];
+    if (!rawId) return;
+
+    const btn = document.getElementById('refreshBtn');
+    const prevText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = '⏳ กำลังโหลด...';
+
+    try {
+      const url = `https://docs.google.com/spreadsheets/d/${rawId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheetName)}`;
+      const res = await fetch(url);
+      const text = await res.text();
+      const jsonMatch = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\);?$/);
+      if (!jsonMatch) throw new Error('ไม่สามารถอ่าน Sheet ได้');
+
+      const json = JSON.parse(jsonMatch[1]);
+      headers = json.table.cols.map(c => c.label || `Col ${c.id}`);
+      const numCols = headers.length;
+      data = json.table.rows
+        .map(r => {
+          const cells = (r.c || []).map(cell => (cell ? cell.v ?? cell.f ?? '' : ''));
+          while (cells.length < numCols) cells.push('');
+          return cells.slice(0, numCols);
+        })
+        .filter(r => r.some(cell => cell !== ''));
+
+      document.getElementById('countBadge').textContent = data.length + ' รายการ';
+      selectedIdx = null;
+      doSearch(); // อัปเดตผลลัพธ์ตามช่องค้นหาปัจจุบัน
+    } catch (e) {
+      alert('⚠️ ' + (e.message || 'โหลดใหม่ไม่สำเร็จ'));
+    } finally {
+      btn.disabled = false;
+      btn.textContent = prevText;
     }
   }
 
@@ -546,7 +597,7 @@
     selectedIdx = null;
 
     const filtered = term
-      ? data.filter(row => row.some(cell => String(cell).toLowerCase().includes(term)))
+      ? data.filter(row => row.some(cell => String(cell ?? '').toLowerCase().includes(term)))
       : data;
 
     if (term) {
@@ -611,7 +662,7 @@
     const slot = document.getElementById('detail-' + idx);
     const term = document.getElementById('searchInput').value.toLowerCase().trim();
     const filtered = term
-      ? data.filter(row => row.some(cell => String(cell).toLowerCase().includes(term)))
+      ? data.filter(row => row.some(cell => String(cell ?? '').toLowerCase().includes(term)))
       : data;
     const row = filtered[idx];
 
