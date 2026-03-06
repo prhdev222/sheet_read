@@ -500,7 +500,9 @@
     btn.textContent = '⏳ กำลังโหลด...';
 
     try {
-      const url = `https://docs.google.com/spreadsheets/d/${rawId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheetName)}`;
+      // ระบุ range ชัดเจน (A1:Z5000 = 26 คอลัมน์, 5000 แถว) เพื่อให้อ่านได้มากกว่า used range ที่ API คืนแค่ 9 แถว
+      const range = `${sheetName}!A1:Z5000`;
+      const url = `https://docs.google.com/spreadsheets/d/${rawId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(range)}`;
       const res = await fetch(url);
       const text = await res.text();
 
@@ -548,7 +550,8 @@
     btn.textContent = '⏳ กำลังโหลด...';
 
     try {
-      const url = `https://docs.google.com/spreadsheets/d/${rawId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheetName)}`;
+      const range = `${sheetName}!A1:Z5000`;
+      const url = `https://docs.google.com/spreadsheets/d/${rawId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(range)}`;
       const res = await fetch(url);
       const text = await res.text();
       const jsonMatch = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\);?$/);
